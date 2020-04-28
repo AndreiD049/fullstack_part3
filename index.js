@@ -38,32 +38,51 @@ const validateName = (name) => {
     return !Boolean(person);
 }
 
-app.get("/api/persons", (req, res) => {
+app.get("/api/persons", (req, res, next) => {
     Person.find({}).then(results => {
-        res.json(results);
-    })
+        res.json(results.map(person => person.toJSON()));
+    }).catch(err => next(err));
 });
 
-app.get("/api/persons/:id", (req, res) => {
+app.get("/api/persons/:id", (req, res, next) => {
     Person
         .findById(req.params.id)
             .then(person => {
-                if (person === null) {
+                if (!person) {
                     res.status(404).end();
                 } else {
-                    res.json(person);
+                    res.json(person.toJSON());
                 }
-            }).catch(err => {
-                console.log(`Error occured while fetching ${req.params.id} - ${err.message}`);
             })
+            .catch(err => next(err));
 });
 
-app.delete("/api/persons/:id", (req, res) => {
-    const id = Number(req.params.id);
+app.delete("/api/persons/:id", (req, res, next) => {
+    Person.findByIdAndRemove(req.params.id)
+        .then(person => {
+            console.log("Removed", person.toJSON());
+            res.status(204).end();
+        })
+        .catch(err => next(err));
+});
 
-    persons = persons.filter(p => p.id !== id);
+app.put("/api/persons/:id", (req, res, next) => {
+    const body = req.body;
 
-    res.status(204).end();
+    const newPerson = {
+        name: body.name,
+        number: body.number
+    }
+
+    Person.findByIdAndUpdate(req.params.id, newPerson, {new: true})
+        .then(updatedPerson => {
+            if (!updatedPerson) {
+                res.status(404).end();
+            } else {
+                res.json(updatedPerson);
+            }
+        })
+        .catch(err => next(err));
 })
 
 app.post("/api/persons", (req, res) => {
@@ -87,13 +106,19 @@ app.post("/api/persons", (req, res) => {
     })
 })
 
-app.get("/info", (req, res) => {
-    const info = {
-        info: `Phonebook has info for ${persons.length} people`,
-        timestamp: new Date().toUTCString()
-    }
+app.get("/info", (req, res, next) => {
+    Person.countDocuments({}, (err, count) => {
+        if (err) {
+            next(err);
+        }
 
-    res.json(info);
+        const info = {
+            info: `Phonebook has info for ${count} people`,
+            timestamp: new Date().toUTCString()
+        }
+
+        res.json(info);
+    });
 });
 
 app.use((req, res, next) => {
@@ -101,6 +126,20 @@ app.use((req, res, next) => {
         error: "Unknown endpoint"
     });
 });
+
+const errorHandler = (error, req, res, next) => {
+    console.log(error.message);
+    
+    if (error.name === "CastError") {
+        return res.status(400).json({
+            error: "Malformed id"
+        });
+    }
+
+    next(error);
+}
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
