@@ -18,3 +18,14 @@ Content-Type: application/json
 ###
 
 GET https://murmuring-beyond-20309.herokuapp.com/api/person
+
+###
+
+
+PUT http://localhost:3001/api/persons/5ea889b07dfad90580784734
+Content-Type: application/json
+
+{
+    "name": "Vladimir Putin3",
+    "number": "+12"
+}
