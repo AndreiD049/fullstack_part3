@@ -11,8 +11,8 @@ POST http://localhost:3001/api/persons
 Content-Type: application/json
 
 {
-    "name": "Vladimir Putin2",
-    "number": "+37360556795"
+    "name": "Vladimir Putin3",
+    "number": "+12341234"
 }
 
 ###

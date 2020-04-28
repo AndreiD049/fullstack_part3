@@ -85,14 +85,8 @@ app.put("/api/persons/:id", (req, res, next) => {
         .catch(err => next(err));
 })
 
-app.post("/api/persons", (req, res) => {
+app.post("/api/persons", (req, res, next) => {
     const body = req.body;
-
-    if (!body.name || !body.number) {
-        return res.status(400).json({
-            error: "either 'name' or 'number' info is missing"
-        });
-    }
 
     const newPerson = new Person({
         name: body.name,
@@ -100,11 +94,11 @@ app.post("/api/persons", (req, res) => {
     });
 
     newPerson.save().then(person => {
-        res.json(newPerson);
-    }).catch(err => {
-        console.log(`Error adding new person ${body.name} - ${body.number} : ${err.message}`);
-    })
-})
+        return person.toJSON();
+    }).then(personJSON => {
+        res.jsonp(personJSON);
+    }).catch(err => next(err));
+});
 
 app.get("/info", (req, res, next) => {
     Person.countDocuments({}, (err, count) => {
@@ -134,6 +128,10 @@ const errorHandler = (error, req, res, next) => {
         return res.status(400).json({
             error: "Malformed id"
         });
+    } else if (error.name === "ValidationError") {
+        return res.status(400).json({
+            error: error.message
+        })
     }
 
     next(error);
