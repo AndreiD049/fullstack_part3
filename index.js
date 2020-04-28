@@ -1,7 +1,9 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 const app = express()
+const Person = require("./models/persons");
 
 // Create new morgan token
 morgan.token("body", (req) => {
@@ -30,24 +32,6 @@ const generateRandomId = () => {
     return randomInRange(1000000, 9999999);
 }
 
-let persons =  [
-    {
-      "name": "Ada Lovelace",
-      "number": "39-44-5323523",
-      "id": 2
-    },
-    {
-      "name": "Mary Poppendieck",
-      "number": "39-23-6423122",
-      "id": 4
-    },
-    {
-      "name": "Max",
-      "number": "322",
-      "id": 5
-    }
-]
-
 const validateName = (name) => {
     const person = persons.find(p => p.name === name);
 
@@ -55,18 +39,23 @@ const validateName = (name) => {
 }
 
 app.get("/api/persons", (req, res) => {
-    res.json(persons);
+    Person.find({}).then(results => {
+        res.json(results);
+    })
 });
 
 app.get("/api/persons/:id", (req, res) => {
-    const id = Number(req.params.id);
-    const person = persons.find(p => p.id === id);
-
-    if (!person) {
-        return res.status(404).end();
-    }
-
-    res.json(person);
+    Person
+        .findById(req.params.id)
+            .then(person => {
+                if (person === null) {
+                    res.status(404).end();
+                } else {
+                    res.json(person);
+                }
+            }).catch(err => {
+                console.log(`Error occured while fetching ${req.params.id} - ${err.message}`);
+            })
 });
 
 app.delete("/api/persons/:id", (req, res) => {
@@ -84,21 +73,18 @@ app.post("/api/persons", (req, res) => {
         return res.status(400).json({
             error: "either 'name' or 'number' info is missing"
         });
-    } else if (!validateName(body.name)) {
-        return res.status(400).json({
-            error: `${body.name} already exists in the database. Name must be unique`
-        })
     }
 
-    const newPerson = {
+    const newPerson = new Person({
         name: body.name,
         number: body.number,
-        id: generateRandomId()
-    }
+    });
 
-    persons = persons.concat(newPerson);
-
-    res.json(newPerson);
+    newPerson.save().then(person => {
+        res.json(newPerson);
+    }).catch(err => {
+        console.log(`Error adding new person ${body.name} - ${body.number} : ${err.message}`);
+    })
 })
 
 app.get("/info", (req, res) => {

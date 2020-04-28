@@ -1,4 +1,4 @@
-GET https://murmuring-beyond-20309.herokuapp.com/api/persons
+GET http://localhost:3001/api/persons
 
 ###
 
