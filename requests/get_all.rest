@@ -9,7 +9,6 @@ DELETE https://murmuring-beyond-20309.herokuapp.com/api/persons/5
 
 POST https://murmuring-beyond-20309.herokuapp.com/api/persons
 Content-Type: application/json
-
 {
     "name": "Vladimir Putin2",
     "number": "+37360556795"
